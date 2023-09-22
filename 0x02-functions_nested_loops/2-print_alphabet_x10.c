@@ -1,6 +1,8 @@
 #include "main.h"
 
 /**
+ * main - Entry point
+ *
  * print_alphabet- make alphabet x10 times
  * Return: void
  */
