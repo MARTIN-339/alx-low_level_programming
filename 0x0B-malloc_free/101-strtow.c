@@ -1,98 +1,120 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
-/**
- * get_word_count - Count the number of words in a string.
- * @str: The input string.
- *
- * Return: The number of words.
- */
-static int get_word_count(char *str)
-{
-	int count = 0;
-	int len = strlen(str);
-	int i;
-
-	for (i = 0; i < len; i++)
-	{
-	if (str[i] != ' ' && (i == 0 || str[i - 1] == ' '))
-	{
-	count++;
-	}
-	}
-	return (count);
+int is_space(char c) {
+    return (c == ' ' || c == '\t' || c == '\n');
 }
-/**
- * allocate_and_copy - Allocate memory for a word and copy it.
- * @start: The starting index of the word.
- * @end: The ending index of the word.
- * @str: The input string.
- *
- * Return: A pointer to the allocated memory.
- */
-static char *allocate_and_copy(int start, int end, char *str)
-{
-	int word_len = end - start + 1;
-	char *word = malloc((word_len + 1) * sizeof(char));
 
-	if (word == NULL)
-	{
-	return (NULL);
-	}
-	strncpy(word, &str[start], word_len);
-	word[word_len] = '\0';
-	return (word);
+int count_words(char *str) {
+    int count = 0;
+    int in_word = 0;  // Flag to track if we are inside a word
+    while (*str) {
+        if (!is_space(*str)) {
+            if (!in_word) {
+                count++;
+                in_word = 1;  // Set the flag
+            }
+        } else {
+            in_word = 0;  // Reset the flag
+        }
+        str++;
+    }
+    return count;
 }
-/**
- * strtow - Splits a string into words.
- * @str: The input string.
- *
- * Return: A pointer to an array of strings (words), or NULL on failure.
- */
-char **strtow(char *str)
-{
-	if (str == NULL || *str == '\0')
-	{
-	return (NULL);
-	}
-	int len = strlen(str);
-	int word_count = get_word_count(str);
-	char **words = malloc((word_count + 1) * sizeof(char *));
 
-	if (words == NULL)
-	{
-	return (NULL);
-	}
-	words[word_count] = NULL;
-	if (word_count == 0)
-	{
-	return (words);
-	}
-	int count = 0, start = 0, end = 0;
-	int i;
+char **strtow(char *str) {
+    if (str == NULL || *str == '\0') {
+        return NULL;
+    }
 
-	for (i = 0; i < len; i++)
-	{
-	if (str[i] != ' ' && (i == 0 || str[i - 1] == ' '))
-	{
-	start = i;
-	}
-	if (str[i] != ' ' && (i == len - 1 || str[i + 1] == ' '))
-	{
-	end = i;
-	words[count] = allocate_and_copy(start, end, str);
-	if (words[count] == NULL)
-	{
-	while (--count >= 0)
-	{
-	free(words[count]);
-	}
-	free(words);
-	return (NULL);
-	}
-	count++;
-	}
-	}
-	return (words);
+    int num_words = count_words(str);
+    if (num_words == 0) {
+        return NULL;
+    }
+
+    char **words = (char **)malloc((num_words + 1) * sizeof(char *));
+    if (words == NULL) {
+        return NULL;
+    }
+
+    int word_index = 0;
+    int word_length = 0;
+    char *word = NULL;
+
+    while (*str) {
+        if (!is_space(*str)) {
+            if (word == NULL) {
+                word = str;  // Start of a new word
+            }
+            word_length++;
+        } else {
+            if (word_length > 0) {
+                words[word_index] = (char *)malloc(word_length + 1);
+                if (words[word_index] == NULL) {
+                    // Memory allocation error, clean up and return NULL
+                    for (int i = 0; i < word_index; i++) {
+                        free(words[i]);
+                    }
+                    free(words);
+                    return NULL;
+                }
+                strncpy(words[word_index], word, word_length);
+                words[word_index][word_length] = '\0';  // Null-terminate the word
+                word_index++;
+                word = NULL;  // Reset word pointer
+                word_length = 0;
+            }
+        }
+        str++;
+    }
+
+    // Handle the last word if it exists
+    if (word_length > 0) {
+        words[word_index] = (char *)malloc(word_length + 1);
+        if (words[word_index] == NULL) {
+            // Memory allocation error, clean up and return NULL
+            for (int i = 0; i <= word_index; i++) {
+                free(words[i]);
+            }
+            free(words);
+            return NULL;
+        }
+        strncpy(words[word_index], word, word_length);
+        words[word_index][word_length] = '\0';  // Null-terminate the last word
+        word_index++;
+    }
+
+    // Set the last element of the array to NULL
+    words[word_index] = NULL;
+
+    return words;
 }
+
+void free_words(char **words) {
+    if (words == NULL) {
+        return;
+    }
+
+    for (int i = 0; words[i] != NULL; i++) {
+        free(words[i]);
+    }
+    free(words);
+}
+
+int main(void) {
+    char input[] = "Split this string into words";
+    char **word_array = strtow(input);
+
+    if (word_array != NULL) {
+        for (int i = 0; word_array[i] != NULL; i++) {
+            printf("%s\n", word_array[i]);
+        }
+
+        free_words(word_array);
+    } else {
+        printf("Failed to split the string.\n");
+    }
+
+    return 0;
+}
+
